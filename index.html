@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Participation élèves</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; }
+.app { padding: 1.5rem 1rem; max-width: 860px; margin: 0 auto; }
+h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+.meta { font-size: 13px; color: #666; margin-bottom: 1.5rem; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.semaine-badge { font-size: 11px; padding: 3px 10px; border-radius: 99px; font-weight: 600; }
+.si { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+.sp { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+.tab-row { display: flex; gap: 4px; margin-bottom: 1.5rem; background: #e8e8e3; padding: 4px; border-radius: 10px; width: fit-content; }
+.tab { padding: 7px 18px; font-size: 13px; border-radius: 7px; border: none; cursor: pointer; color: #666; background: transparent; font-weight: 500; }
+.tab.active { background: #fff; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.cours-list { display: flex; flex-direction: column; gap: 10px; }
+.cours-card { background: #fff; border: 1px solid #e0e0d8; border-radius: 12px; padding: 14px 16px; transition: border-color 0.15s; }
+.cours-card.active-card { border: 2px solid #3b82f6; }
+.cours-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; cursor: pointer; }
+.cours-classe { font-size: 15px; font-weight: 600; }
+.cours-time { font-size: 13px; color: #666; }
+.cours-day { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: #f0f0ea; color: #555; }
+.cours-pts-summary { margin-left: auto; font-size: 12px; color: #888; text-align: right; }
+.entry-zone { margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px; }
+.students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.s-card { border-radius: 8px; padding: 8px 10px; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; }
+.s-card:hover { filter: brightness(0.95); }
+.s-green { background: #dcfce7; border-color: #86efac; }
+.s-green .s-name { color: #14532d; }
+.s-green .s-score { color: #166534; }
+.s-orange { background: #fef3c7; border-color: #fcd34d; }
+.s-orange .s-name { color: #78350f; }
+.s-orange .s-score { color: #92400e; }
+.s-red { background: #fee2e2; border-color: #fca5a5; }
+.s-red .s-name { color: #7f1d1d; }
+.s-red .s-score { color: #991b1b; }
+.s-gray { background: #f5f5f0; border-color: #ddd; }
+.s-gray .s-name { color: #1a1a1a; }
+.s-gray .s-score { color: #666; }
+.s-card.sel { outline: 3px solid #3b82f6; outline-offset: 1px; }
+.s-name { font-size: 13px; font-weight: 600; }
+.s-score { font-size: 11px; margin-top: 2px; }
+.legend { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #666; }
+.leg-dot { width: 10px; height: 10px; border-radius: 50%; }
+.pts-row { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.pts-btn { padding: 8px 16px; border: 1px solid #ddd; border-radius: 8px; background: #f5f5f0; color: #333; font-size: 13px; cursor: pointer; font-weight: 500; }
+.pts-btn:hover { background: #eee; }
+.pts-btn.active-1 { background: #dcfce7; border-color: #86efac; color: #14532d; }
+.pts-btn.active-2 { background: #dbeafe; border-color: #93c5fd; color: #1e40af; }
+.pts-btn.active-3 { background: #fef3c7; border-color: #fcd34d; color: #78350f; }
+.comment-input { width: 100%; font-size: 13px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; margin-bottom: 10px; outline: none; }
+.comment-input:focus { border-color: #3b82f6; }
+.action-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn-save { padding: 8px 20px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 600; }
+.btn-save:hover { background: #1d4ed8; }
+.btn-save:disabled { background: #ddd; color: #999; cursor: not-allowed; }
+.btn-cancel { padding: 8px 14px; font-size: 13px; background: transparent; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; color: #666; }
+.msg { font-size: 12px; padding: 6px 12px; border-radius: 8px; }
+.msg.ok { background: #dcfce7; color: #14532d; }
+.msg.err { background: #fee2e2; color: #7f1d1d; }
+.msg.warn { background: #fef3c7; color: #78350f; }
+.no-cours { text-align: center; color: #888; font-size: 14px; padding: 3rem 1rem; }
+.history-entry { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid #f0f0ea; font-size: 12px; }
+.history-entry:last-child { border-bottom: none; }
+.pts-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 600; flex-shrink: 0; }
+.p1 { background: #dcfce7; color: #14532d; }
+.p2 { background: #dbeafe; color: #1e40af; }
+.p3 { background: #fef3c7; color: #78350f; }
+.stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 1rem; }
+.stat-card { background: #fff; border-radius: 10px; padding: 12px; border: 1px solid #e0e0d8; }
+.stat-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+.stat-val { font-size: 24px; font-weight: 700; }
+.setup-box { background: #fff; border: 1px solid #e0e0d8; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.2rem; }
+.setup-box h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+.field-label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; margin-top: 10px; }
+input[type="text"], input[type="password"], input[type="number"], textarea, select {
+  font-size: 13px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; width: 100%; outline: none;
+}
+input:focus, textarea:focus, select:focus { border-color: #3b82f6; }
+.btn-sm { padding: 7px 14px; font-size: 13px; background: #f5f5f0; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; color: #333; font-weight: 500; }
+.btn-sm:hover { background: #eee; }
+.sync-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #dbeafe; border-radius: 8px; margin-bottom: 1rem; font-size: 13px; color: #1e40af; }
+.sync-bar.ok { background: #dcfce7; color: #14532d; }
+.sync-bar.err { background: #fee2e2; color: #7f1d1d; }
+.spinner { width: 16px; height: 16px; border: 2px solid #93c5fd; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.nav-week { display: flex; gap: 8px; align-items: center; margin-bottom: 1rem; }
+.nav-btn { padding: 6px 14px; font-size: 13px; background: #fff; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-weight: 500; }
+.nav-btn:hover { background: #f5f5f0; }
+.week-label { font-size: 13px; color: #666; min-width: 180px; text-align: center; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+    <h1>Participation</h1>
+    <span class="semaine-badge" id="sem-badge">SP</span>
+  </div>
+  <div class="meta" id="meta-line"></div>
+
+  <div id="sync-status" class="sync-bar" style="display:none;">
+    <div class="spinner" id="sync-spinner"></div>
+    <span id="sync-msg">Chargement des élèves...</span>
+    <button class="btn-sm" id="sync-retry" style="display:none;margin-left:auto;" onclick="loadElevesFromSheet()">Réessayer</button>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab active" onclick="showTab('cours')">Mes cours</button>
+    <button class="tab" onclick="showTab('stats')">Récapitulatif</button>
+    <button class="tab" onclick="showTab('config')">Configuration</button>
+  </div>
+
+  <div id="tab-cours">
+    <div class="nav-week">
+      <button class="nav-btn" onclick="changeWeek(-1)">← Sem. préc.</button>
+      <span class="week-label" id="week-label"></span>
+      <button class="nav-btn" onclick="changeWeek(1)">Sem. suiv. →</button>
+    </div>
+    <div id="cours-container"></div>
+  </div>
+
+  <div id="tab-stats" style="display:none;">
+    <select id="stats-class" onchange="renderStats()" style="margin-bottom:1rem;width:auto;">
+      <option value="1SD4">1SD4</option>
+      <option value="2NDE 08">2NDE 08</option>
+      <option value="2NDE 14">2NDE 14</option>
+    </select>
+    <div id="stats-container"></div>
+  </div>
+
+  <div id="tab-config" style="display:none;">
+    <div class="setup-box">
+      <h2>Connexion Google Sheets</h2>
+      <label class="field-label">URL Apps Script</label>
+      <input type="text" id="cfg-url" placeholder="https://script.google.com/macros/s/.../exec" />
+      <label class="field-label">Token secret</label>
+      <div style="display:flex;gap:6px;margin-top:4px;">
+        <input type="password" id="cfg-token" placeholder="Votre token secret" style="flex:1;width:auto;" />
+        <button class="btn-sm" onclick="togglePwd()">Afficher</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-sm" onclick="saveConfig()">Sauvegarder</button>
+        <button class="btn-sm" onclick="loadElevesFromSheet()">Recharger les élèves</button>
+        <span id="cfg-msg" class="msg" style="display:none;"></span>
+      </div>
+      <p style="font-size:12px;color:#aaa;margin-top:8px;">Les élèves sont chargés automatiquement depuis l'onglet "Eleves" de ton Google Sheet.</p>
+    </div>
+
+    <div class="setup-box">
+      <h2>Seuils de couleur</h2>
+      <p style="font-size:12px;color:#888;margin-bottom:10px;">Basés sur la moyenne de points par cours.</p>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <div><label class="field-label">🟢 Vert si moyenne ≥</label><input type="number" id="thr-green" min="0" max="10" step="0.1" style="width:70px;" /></div>
+        <div><label class="field-label">🟠 Orange si moyenne ≥</label><input type="number" id="thr-orange" min="0" max="10" step="0.1" style="width:70px;" /></div>
+        <button class="btn-sm" onclick="saveThresholds()">Appliquer</button>
+      </div>
+      <p style="font-size:11px;color:#aaa;margin-top:8px;">🔴 Rouge = en dessous du seuil orange ou aucune participation.</p>
+    </div>
+
+    <div class="setup-box">
+      <h2>Données locales</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-sm" onclick="exportCSV()">Exporter CSV</button>
+        <button class="btn-sm" onclick="exportJSON()">Sauvegarder JSON</button>
+        <button class="btn-sm" onclick="importJSON()">Restaurer JSON</button>
+        <input type="file" id="import-file" accept=".json" style="display:none;" onchange="handleImport(event)" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CLASSES=['1SD4','2NDE 08','2NDE 14'];
+const EMPLOI_DU_TEMPS={
+  SI:[
+    {jour:1,debut:'09h05',fin:'10h00',classe:'1SD4'},
+    {jour:1,debut:'10h20',fin:'11h20',classe:'2NDE 14'},
+    {jour:1,debut:'11h20',fin:'11h50',classe:'2NDE 14'},
+    {jour:1,debut:'13h45',fin:'14h15',classe:'1SD4'},
+    {jour:1,debut:'14h45',fin:'15h15',classe:'2NDE 08'},
+    {jour:2,debut:'08h30',fin:'09h05',classe:'2NDE 08'},
+    {jour:2,debut:'10h20',fin:'11h50',classe:'2NDE 14'},
+    {jour:3,debut:'10h20',fin:'11h20',classe:'2NDE 14'},
+    {jour:3,debut:'11h50',fin:'12h15',classe:'2NDE 08'},
+    {jour:3,debut:'13h45',fin:'15h15',classe:'1SD4'},
+  ],
+  SP:[
+    {jour:1,debut:'09h05',fin:'10h00',classe:'1SD4'},
+    {jour:1,debut:'11h20',fin:'11h50',classe:'2NDE 14'},
+    {jour:1,debut:'13h45',fin:'14h15',classe:'1SD4'},
+    {jour:1,debut:'14h45',fin:'15h15',classe:'2NDE 08'},
+    {jour:2,debut:'08h30',fin:'09h05',classe:'2NDE 08'},
+    {jour:2,debut:'10h20',fin:'11h50',classe:'2NDE 14'},
+    {jour:3,debut:'10h20',fin:'11h20',classe:'2NDE 14'},
+    {jour:3,debut:'11h50',fin:'12h15',classe:'2NDE 08'},
+    {jour:3,debut:'13h45',fin:'15h15',classe:'1SD4'},
+  ]
+};
+const JOURS=['','Lundi','Mardi','Mercredi'];
+const JOURS_COURTS=['','lun.','mar.','mer.'];
+const MOIS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+const REF_LUNDI_SP=new Date(2026,2,16);
+
+let data=JSON.parse(localStorage.getItem('particip_v3')||'null')||{
+  entries:[],students:{'1SD4':[],'2NDE 08':[],'2NDE 14':[]},apiUrl:'',apiToken:'',thrGreen:1.5,thrOrange:0.5
+};
+
+let currentWeekOffset=0,openCours=null,selStudent=null,selPts=null;
+
+function getMonday(o){const d=new Date(REF_LUNDI_SP);d.setDate(d.getDate()+o*7);return d;}
+function getSemaine(o){return((o%2)+2)%2===0?'SP':'SI';}
+function getDateForJour(l,j){const d=new Date(l);d.setDate(d.getDate()+j-1);return d;}
+function formatDate(d){const j=d.getDay();return`${JOURS_COURTS[j===1?1:j===2?2:3]} ${d.getDate()} ${MOIS[d.getMonth()]}`;}
+function formatDateFull(d){return`${d.getDate()} ${MOIS[d.getMonth()]} ${d.getFullYear()}`;}
+function getCoursKey(l,c){const d=getDateForJour(l,c.jour);return`${d.toISOString().split('T')[0]}_${c.classe}_${c.debut}`;}
+function saveData(){localStorage.setItem('particip_v3',JSON.stringify(data));}
+
+function getCurrentWeekOffset(){
+  const now=new Date(),nm=new Date(now);
+  nm.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1));nm.setHours(0,0,0,0);
+  const ref=new Date(REF_LUNDI_SP);ref.setHours(0,0,0,0);
+  return Math.round((nm-ref)/(7*24*3600*1000));
+}
+
+function getStudentColor(student,classe){
+  const all=data.entries.filter(e=>e.classe===classe&&e.student===student);
+  if(!all.length)return'gray';
+  const total=all.reduce((a,e)=>a+e.pts,0);
+  const keys=[...new Set(data.entries.filter(e=>e.classe===classe).map(e=>e.coursKey))];
+  if(!keys.length)return'gray';
+  const avg=total/keys.length;
+  return avg>=data.thrGreen?'green':avg>=data.thrOrange?'orange':'red';
+}
+function getCC(c){return{green:'s-green',orange:'s-orange',red:'s-red',gray:'s-gray'}[c];}
+
+async function loadElevesFromSheet(){
+  if(!data.apiUrl||!data.apiToken)return;
+  setSyncStatus('loading','Chargement des élèves depuis Google Sheets...');
+  try{
+    const r=await fetch(`${data.apiUrl}?token=${encodeURIComponent(data.apiToken)}&action=getEleves`);
+    const json=await r.json();
+    let updated=false;
+    CLASSES.forEach(cls=>{
+      if(json[cls]&&json[cls].length>0){data.students[cls]=json[cls];updated=true;}
+    });
+    if(updated){saveData();setSyncStatus('ok','Élèves chargés depuis Google Sheets !');renderWeek();}
+    else setSyncStatus('err','Aucun élève trouvé. Vérifiez l\'onglet "Eleves" dans votre Sheet.');
+  }catch(e){setSyncStatus('err','Impossible de charger les élèves : '+e.message);}
+}
+
+function setSyncStatus(type,msg){
+  const bar=document.getElementById('sync-status');
+  const spinner=document.getElementById('sync-spinner');
+  const msgEl=document.getElementById('sync-msg');
+  const retry=document.getElementById('sync-retry');
+  bar.style.display='flex';msgEl.textContent=msg;
+  if(type==='loading'){bar.className='sync-bar';spinner.style.display='';retry.style.display='none';}
+  else if(type==='ok'){bar.className='sync-bar ok';spinner.style.display='none';retry.style.display='none';setTimeout(()=>bar.style.display='none',3000);}
+  else{bar.className='sync-bar err';spinner.style.display='none';retry.style.display='';}
+}
+
+function init(){
+  currentWeekOffset=getCurrentWeekOffset();
+  updateMeta();renderWeek();
+  if(data.apiUrl)document.getElementById('cfg-url').value=data.apiUrl;
+  if(data.apiToken)document.getElementById('cfg-token').value=data.apiToken;
+  document.getElementById('thr-green').value=data.thrGreen;
+  document.getElementById('thr-orange').value=data.thrOrange;
+  if(data.apiUrl&&data.apiToken)loadElevesFromSheet();
+}
+
+function updateMeta(){
+  const sem=getSemaine(currentWeekOffset);
+  document.getElementById('sem-badge').textContent=sem;
+  document.getElementById('sem-badge').className='semaine-badge '+sem.toLowerCase();
+  const lundi=getMonday(currentWeekOffset);
+  document.getElementById('meta-line').textContent=`Semaine du ${formatDateFull(lundi)} au ${formatDateFull(getDateForJour(lundi,3))}`;
+  document.getElementById('week-label').textContent=`Sem. ${sem} — ${lundi.getDate()} ${MOIS[lundi.getMonth()]}`;
+}
+
+function changeWeek(d){currentWeekOffset+=d;openCours=null;selStudent=null;selPts=null;updateMeta();renderWeek();}
+
+function renderWeek(){
+  const sem=getSemaine(currentWeekOffset),lundi=getMonday(currentWeekOffset);
+  const cours=EMPLOI_DU_TEMPS[sem].filter(c=>CLASSES.includes(c.classe));
+  const container=document.getElementById('cours-container');
+  if(!cours.length){container.innerHTML='<p class="no-cours">Aucun cours cette semaine.</p>';return;}
+  container.innerHTML='<div class="cours-list">'+cours.map((c,idx)=>{
+    const d=getDateForJour(lundi,c.jour),key=getCoursKey(lundi,c);
+    const entries=data.entries.filter(e=>e.coursKey===key);
+    const totalPts=entries.reduce((a,e)=>a+e.pts,0);
+    const nbEleves=new Set(entries.map(e=>e.student)).size;
+    const isOpen=openCours===key;
+    const students=data.students[c.classe]||[];
+    let ez='';
+    if(isOpen){
+      const sc=students.length===0
+        ?'<p style="font-size:13px;color:#888;">Aucun élève. Vérifiez l\'onglet "Eleves" dans votre Google Sheet et cliquez sur "Recharger les élèves".</p>'
+        :'<div class="students-grid">'+students.map(s=>{
+          const color=getStudentColor(s,c.classe),cc=getCC(color);
+          const se=entries.filter(e=>e.student===s),sp=se.reduce((a,e)=>a+e.pts,0);
+          return`<div class="s-card ${cc} ${selStudent===s?'sel':''}" onclick="selectStudent('${s.replace(/'/g,"\\'")}')">
+            <div class="s-name">${s}</div>
+            <div class="s-score">${sp>0?`Ce cours : ${sp}pt`:'Ce cours : 0'}</div>
+          </div>`;
+        }).join('')+'</div>';
+      const hist=entries.slice(-5).reverse();
+      const hh=hist.length?'<div style="margin-top:10px;"><div style="font-size:12px;color:#888;margin-bottom:5px;">Dernières saisies</div>'
+        +hist.map(e=>`<div class="history-entry"><span class="pts-badge p${e.pts}">${e.pts}pt</span><span style="flex:1;">${e.student}</span><span style="color:#888;font-style:italic;">${e.comment||''}</span></div>`).join('')+'</div>':'';
+      ez=`<div class="entry-zone">
+        <div class="legend">
+          <span style="font-size:11px;color:#888;margin-right:4px;">Participation globale :</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#16a34a;"></span>Bonne</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#d97706;"></span>Moyenne</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#dc2626;"></span>Faible</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#aaa;"></span>Aucune donnée</span>
+        </div>
+        ${sc}
+        <div class="pts-row">
+          <button class="pts-btn ${selPts===1?'active-1':''}" onclick="setPts(1)">1 pt — Simple</button>
+          <button class="pts-btn ${selPts===2?'active-2':''}" onclick="setPts(2)">2 pts — Bonne</button>
+          <button class="pts-btn ${selPts===3?'active-3':''}" onclick="setPts(3)">3 pts — Excellente</button>
+        </div>
+        <input class="comment-input" id="cmt-${idx}" type="text" placeholder="Commentaire (optionnel)" />
+        <div class="action-row">
+          <button class="btn-save" onclick="saveEntry('${key}',${idx},'${c.classe}')" ${(!selStudent||!selPts)?'disabled':''}>Enregistrer</button>
+          <button class="btn-cancel" onclick="closePanel()">Fermer</button>
+          <span id="msg-${idx}" class="msg" style="display:none;"></span>
+        </div>
+        ${hh}
+      </div>`;
+    }
+    return`<div class="cours-card ${isOpen?'active-card':''}">
+      <div class="cours-header" onclick="toggleCours('${key}')">
+        <div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:3px;">
+            <span class="cours-classe">${c.classe}</span>
+            <span class="cours-day">${JOURS[c.jour]} ${formatDate(d)}</span>
+          </div>
+          <div class="cours-time">${c.debut} – ${c.fin}</div>
+        </div>
+        <div class="cours-pts-summary">
+          ${totalPts>0?`<strong>${totalPts} pts</strong><br>`:''}
+          ${nbEleves>0?`${nbEleves} élève${nbEleves>1?'s':''}`:'Aucune saisie'}
+        </div>
+      </div>${ez}</div>`;
+  }).join('')+'</div>';
+}
+
+function toggleCours(key){openCours=openCours===key?null:key;selStudent=null;selPts=null;renderWeek();}
+function closePanel(){openCours=null;selStudent=null;selPts=null;renderWeek();}
+function selectStudent(n){selStudent=n;renderWeek();}
+function setPts(n){selPts=n;renderWeek();}
+
+async function saveEntry(key,idx,classe){
+  if(!selStudent||!selPts)return;
+  const entry={coursKey:key,classe,student:selStudent,pts:selPts,comment:(document.getElementById('cmt-'+idx)||{}).value||'',date:new Date().toISOString().split('T')[0]};
+  data.entries.push(entry);saveData();
+  const m=document.getElementById('msg-'+idx);
+  if(m){m.style.display='';m.className='msg ok';m.textContent='Enregistré !';}
+  if(data.apiUrl&&data.apiToken){
+    try{
+      await fetch(data.apiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...entry,token:data.apiToken})});
+      if(m)m.textContent='Envoyé vers Google Sheets !';
+    }catch(e){if(m){m.className='msg warn';m.textContent='Enregistré localement uniquement.';}}
+  }
+  selStudent=null;selPts=null;
+  setTimeout(()=>renderWeek(),800);
+}
+
+function renderStats(){
+  const cls=document.getElementById('stats-class').value;
+  const entries=data.entries.filter(e=>e.classe===cls);
+  const students=data.students[cls]||[];
+  const total=entries.reduce((a,e)=>a+e.pts,0);
+  const sessions=[...new Set(entries.map(e=>e.coursKey))].length;
+  const actifs=new Set(entries.map(e=>e.student)).size;
+  const colorDot={green:'#16a34a',orange:'#d97706',red:'#dc2626',gray:'#aaa'};
+  const rows=students.map(s=>{const se=entries.filter(e=>e.student===s);return{name:s,total:se.reduce((a,e)=>a+e.pts,0),count:se.length,color:getStudentColor(s,cls)};}).sort((a,b)=>b.total-a.total);
+  document.getElementById('stats-container').innerHTML=`
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-label">Points distribués</div><div class="stat-val">${total}</div></div>
+      <div class="stat-card"><div class="stat-label">Séances notées</div><div class="stat-val">${sessions}</div></div>
+      <div class="stat-card"><div class="stat-label">Élèves actifs</div><div class="stat-val">${actifs}</div></div>
+    </div>
+    <div style="background:#fff;border:1px solid #e0e0d8;border-radius:12px;padding:1rem;">
+      ${rows.length===0?'<p style="font-size:13px;color:#888;">Aucune donnée.</p>':
+        rows.map((r,i)=>`<div class="history-entry">
+          <span style="font-weight:700;min-width:22px;font-size:13px;">${i+1}.</span>
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${colorDot[r.color]};margin-right:4px;flex-shrink:0;margin-top:2px;"></span>
+          <span style="flex:1;font-size:13px;">${r.name}</span>
+          <span class="pts-badge ${r.total>=10?'p3':r.total>=5?'p2':'p1'}">${r.total} pts</span>
+          <span style="font-size:12px;color:#888;min-width:80px;text-align:right;">${r.count} intervention${r.count>1?'s':''}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+function saveThresholds(){
+  data.thrGreen=parseFloat(document.getElementById('thr-green').value)||1.5;
+  data.thrOrange=parseFloat(document.getElementById('thr-orange').value)||0.5;
+  saveData();renderWeek();
+  const m=document.getElementById('cfg-msg');m.style.display='';m.className='msg ok';m.textContent='Seuils mis à jour !';setTimeout(()=>m.style.display='none',2000);
+}
+
+function saveConfig(){
+  data.apiUrl=document.getElementById('cfg-url').value.trim();
+  data.apiToken=document.getElementById('cfg-token').value.trim();
+  saveData();
+  const m=document.getElementById('cfg-msg');m.style.display='';m.className='msg ok';m.textContent='Sauvegardé !';setTimeout(()=>m.style.display='none',2000);
+  if(data.apiUrl&&data.apiToken)loadElevesFromSheet();
+}
+
+function togglePwd(){const i=document.getElementById('cfg-token');i.type=i.type==='password'?'text':'password';}
+function exportCSV(){
+  const rows=[['Date','Classe','Élève','Points','Commentaire','Clé cours']];
+  data.entries.forEach(e=>rows.push([e.date,e.classe,e.student,e.pts,e.comment||'',e.coursKey]));
+  dl('participation.csv','data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n')));
+}
+function exportJSON(){dl('participation_backup.json','data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2)));}
+function importJSON(){document.getElementById('import-file').click();}
+function handleImport(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{try{data=JSON.parse(ev.target.result);saveData();init();alert('Données restaurées !');}catch(e){alert('Fichier invalide.');}};
+  reader.readAsText(file);
+}
+function dl(filename,href){const a=document.createElement('a');a.href=href;a.download=filename;a.click();}
+
+function showTab(tab){
+  ['cours','stats','config'].forEach(t=>document.getElementById('tab-'+t).style.display=t===tab?'':'none');
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['cours','stats','config'][i]===tab));
+  if(tab==='stats')renderStats();
+}
+
+init();
+</script>
+</body>
+</html>
