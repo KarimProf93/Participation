@@ -7,6 +7,15 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; }
+.login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f5f5f0; }
+.login-box { background: #fff; border: 1px solid #e0e0d8; border-radius: 16px; padding: 2.5rem 2rem; width: 100%; max-width: 360px; text-align: center; }
+.login-box h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.login-box p { font-size: 13px; color: #888; margin-bottom: 1.5rem; }
+.login-input { font-size: 15px; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; width: 100%; outline: none; text-align: center; letter-spacing: 2px; margin-bottom: 12px; }
+.login-input:focus { border-color: #3b82f6; }
+.login-btn { width: 100%; padding: 10px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+.login-btn:hover { background: #1d4ed8; }
+.login-err { font-size: 13px; color: #dc2626; margin-top: 10px; }
 .app { padding: 1.5rem 1rem; max-width: 860px; margin: 0 auto; }
 h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
 .meta { font-size: 13px; color: #666; margin-bottom: 1.5rem; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -95,7 +104,18 @@ input:focus, textarea:focus, select:focus { border-color: #3b82f6; }
 </style>
 </head>
 <body>
-<div class="app">
+
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <h1>Participation</h1>
+    <p>Entrez le mot de passe pour accéder à l'application</p>
+    <input class="login-input" type="password" id="login-pwd" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')checkLogin()" />
+    <button class="login-btn" onclick="checkLogin()">Accéder</button>
+    <div class="login-err" id="login-err">Mot de passe incorrect</div>
+  </div>
+</div>
+
+<div class="app" id="main-app" style="display:none;">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
     <h1>Participation</h1>
     <span class="semaine-badge" id="sem-badge">SP</span>
@@ -303,14 +323,24 @@ function renderWeek(){
         :'<div class="students-grid">'+students.map(s=>{
           const color=getStudentColor(s,c.classe),cc=getCC(color);
           const se=entries.filter(e=>e.student===s),sp=se.reduce((a,e)=>a+e.pts,0);
-          return`<div class="s-card ${cc} ${selStudent===s?'sel':''}" onclick="selectStudent('${s.replace(/'/g,"\\'")}')">
+          const isSelected = selStudent===s;
+          const scoreLabel = sp>0 ? (isSelected&&selPts ? `→ ${selPts}pt` : `${sp}pt ce cours`) : (isSelected&&selPts ? `→ ${selPts}pt` : 'Ce cours : 0');
+          return`<div class="s-card ${cc} ${isSelected?'sel':''}" onclick="selectStudent('${s.replace(/'/g,"\\'")}')">
             <div class="s-name">${s}</div>
-            <div class="s-score">${sp>0?`Ce cours : ${sp}pt`:'Ce cours : 0'}</div>
+            <div class="s-score">${scoreLabel}</div>
           </div>`;
         }).join('')+'</div>';
       const hist=entries.slice(-5).reverse();
       const hh=hist.length?'<div style="margin-top:10px;"><div style="font-size:12px;color:#888;margin-bottom:5px;">Dernières saisies</div>'
-        +hist.map(e=>`<div class="history-entry"><span class="pts-badge p${e.pts}">${e.pts}pt</span><span style="flex:1;">${e.student}</span><span style="color:#888;font-style:italic;">${e.comment||''}</span></div>`).join('')+'</div>':'';
+        +hist.map((e,i)=>{
+          const realIdx=data.entries.map((en,ri)=>en.coursKey===key&&en.student===e.student&&en.pts===e.pts?ri:-1).filter(x=>x>=0).slice(-5).reverse()[i];
+          return`<div class="history-entry">
+            <span class="pts-badge p${e.pts}">${e.pts}pt</span>
+            <span style="flex:1;">${e.student}</span>
+            <span style="color:#888;font-style:italic;flex:1;">${e.comment||''}</span>
+            <button onclick="deleteEntry(${realIdx},'${key}')" style="font-size:11px;padding:2px 8px;background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;color:#7f1d1d;flex-shrink:0;">Annuler</button>
+          </div>`;
+        }).join('')+'</div>':'';
       ez=`<div class="entry-zone">
         <div class="legend">
           <span style="font-size:11px;color:#888;margin-right:4px;">Participation globale :</span>
@@ -351,6 +381,15 @@ function renderWeek(){
   }).join('')+'</div>';
 }
 
+function deleteEntry(idx, key){
+  if(idx < 0 || idx >= data.entries.length) return;
+  const entry = data.entries[idx];
+  if(!confirm(`Supprimer la participation de ${entry.student} (${entry.pts}pt) ?`)) return;
+  data.entries.splice(idx, 1);
+  saveData();
+  renderWeek();
+}
+
 function toggleCours(key){openCours=openCours===key?null:key;selStudent=null;selPts=null;renderWeek();}
 function closePanel(){openCours=null;selStudent=null;selPts=null;renderWeek();}
 function selectStudent(n){selStudent=n;renderWeek();}
@@ -359,7 +398,15 @@ function setPts(n){selPts=n;renderWeek();}
 async function saveEntry(key,idx,classe){
   if(!selStudent||!selPts)return;
   const entry={coursKey:key,classe,student:selStudent,pts:selPts,comment:(document.getElementById('cmt-'+idx)||{}).value||'',date:new Date().toISOString().split('T')[0]};
-  data.entries.push(entry);saveData();
+
+  // Remplace l'entrée existante si l'élève a déjà une note pour ce cours
+  const existingIdx = data.entries.findIndex(e=>e.coursKey===key&&e.student===selStudent);
+  if(existingIdx >= 0){
+    data.entries[existingIdx] = entry;
+  } else {
+    data.entries.push(entry);
+  }
+  saveData();
   const m=document.getElementById('msg-'+idx);
   if(m){m.style.display='';m.className='msg ok';m.textContent='Enregistré !';}
   if(data.apiUrl&&data.apiToken){
@@ -446,7 +493,32 @@ function showTab(tab){
   if(tab==='stats')renderStats();
 }
 
-init();
+const APP_PASSWORD = "monsieur";
+
+function checkLogin(){
+  const pwd = document.getElementById('login-pwd').value;
+  const err = document.getElementById('login-err');
+  if(pwd === APP_PASSWORD){
+    localStorage.setItem('particip_auth', '1');
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-app').style.display='';
+    init();
+  } else {
+    err.style.display='block';
+    err.textContent='Mot de passe incorrect';
+    document.getElementById('login-pwd').value='';
+  }
+}
+
+function checkAuth(){
+  if(localStorage.getItem('particip_auth')==='1'){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-app').style.display='';
+    init();
+  }
+}
+
+checkAuth();
 </script>
 </body>
 </html>
