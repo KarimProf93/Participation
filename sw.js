@@ -1,7 +1,7 @@
 const CACHE_NAME = 'participation-v1';
 const urlsToCache = [
-  '/participation-eleves/',
-  '/participation-eleves/index.html'
+  '/Participation/',
+  '/Participation/index.html'
 ];
 
 self.addEventListener('install', event => {
@@ -24,7 +24,7 @@ self.addEventListener('fetch', event => {
         });
         return response;
       });
-    }).catch(() => caches.match('/participation-eleves/index.html'))
+    }).catch(() => caches.match('/Participation/index.html'))
   );
 });
 
