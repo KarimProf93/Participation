@@ -149,8 +149,10 @@ input:focus, textarea:focus, select:focus { border-color: #3b82f6; }
       </div>
       <p style="font-size:12px;color:#aaa;margin-top:8px;">Les élèves sont chargés automatiquement depuis l'onglet "Eleves" de ton Google Sheet.</p>
     </div>
+
     <div class="setup-box">
       <h2>Seuils de couleur</h2>
+      <p style="font-size:12px;color:#888;margin-bottom:10px;">Basés sur la moyenne de points par cours.</p>
       <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
         <div><label class="field-label">🟢 Vert si moyenne ≥</label><input type="number" id="thr-green" min="0" max="10" step="0.1" style="width:70px;" /></div>
         <div><label class="field-label">🟠 Orange si moyenne ≥</label><input type="number" id="thr-orange" min="0" max="10" step="0.1" style="width:70px;" /></div>
@@ -158,6 +160,7 @@ input:focus, textarea:focus, select:focus { border-color: #3b82f6; }
       </div>
       <p style="font-size:11px;color:#aaa;margin-top:8px;">🔴 Rouge = en dessous du seuil orange ou aucune participation.</p>
     </div>
+
     <div class="setup-box">
       <h2>Données locales</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -205,6 +208,7 @@ const REF_LUNDI_SP=new Date(2026,2,16);
 let data=JSON.parse(localStorage.getItem('particip_v3')||'null')||{
   entries:[],students:{'1SD4':[],'2NDE 08':[],'2NDE 14':[]},apiUrl:'',apiToken:'',thrGreen:1.5,thrOrange:0.5
 };
+
 let currentWeekOffset=0,openCours=null,selStudent=null,selPts=null;
 
 function getMonday(o){const d=new Date(REF_LUNDI_SP);d.setDate(d.getDate()+o*7);return d;}
@@ -295,7 +299,7 @@ function renderWeek(){
     let ez='';
     if(isOpen){
       const sc=students.length===0
-        ?'<p style="font-size:13px;color:#888;">Aucun élève. Vérifiez l\'onglet "Eleves" dans votre Google Sheet.</p>'
+        ?'<p style="font-size:13px;color:#888;">Aucun élève. Vérifiez l\'onglet "Eleves" dans votre Google Sheet et cliquez sur "Recharger les élèves".</p>'
         :'<div class="students-grid">'+students.map(s=>{
           const color=getStudentColor(s,c.classe),cc=getCC(color);
           const se=entries.filter(e=>e.student===s),sp=se.reduce((a,e)=>a+e.pts,0);
@@ -360,7 +364,17 @@ async function saveEntry(key,idx,classe){
   if(m){m.style.display='';m.className='msg ok';m.textContent='Enregistré !';}
   if(data.apiUrl&&data.apiToken){
     try{
-      await fetch(data.apiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...entry,token:data.apiToken})});
+      const params=new URLSearchParams({
+        token:data.apiToken,
+        action:'addEntry',
+        date:entry.date,
+        classe:entry.classe,
+        student:entry.student,
+        pts:entry.pts,
+        comment:entry.comment||'',
+        coursKey:entry.coursKey
+      });
+      await fetch(`${data.apiUrl}?${params.toString()}`);
       if(m)m.textContent='Envoyé vers Google Sheets !';
     }catch(e){if(m){m.className='msg warn';m.textContent='Enregistré localement uniquement.';}}
   }
